@@ -162,7 +162,7 @@ public void loadMap(){
     for(int r = 0; r<rowCount; r++){
         for(int c=0; c<columnCount; c++){
             String row = tileMap[r];
-            char tileMapChar = row.charAt(c);
+            char tileMapChar = row.charAt(c); //recognize specific tile
 
             int x = c*tileSize;
             int y = r*tileSize; 
