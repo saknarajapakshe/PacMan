@@ -150,24 +150,25 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     int lives = 3;
     boolean gameOver = false;
     private boolean gamePaused = false;
+    private int cherriesEaten = 0;
 
     PacMan() {
         setPreferredSize(new Dimension(boardWidth, boardHeight));
         setBackground(Color.BLACK);
 
         // Load the images
-        wallImage = new ImageIcon(getClass().getResource("/wall .png")).getImage();
-        blueGhosImage = new ImageIcon(getClass().getResource("./blueGhost.png")).getImage();
-        redGhostImage = new ImageIcon(getClass().getResource("./redGhost.png")).getImage();
-        orangeGhostImage = new ImageIcon(getClass().getResource("./orangeGhost.png")).getImage();
-        pinkGhostImage = new ImageIcon(getClass().getResource("./pinkGhost.png")).getImage();
+        wallImage = new ImageIcon(getClass().getResource("/assets/wall .png")).getImage();
+        blueGhosImage = new ImageIcon(getClass().getResource("/assets/blueGhost.png")).getImage();
+        redGhostImage = new ImageIcon(getClass().getResource("/assets/redGhost.png")).getImage();
+        orangeGhostImage = new ImageIcon(getClass().getResource("/assets/orangeGhost.png")).getImage();
+        pinkGhostImage = new ImageIcon(getClass().getResource("/assets/pinkGhost.png")).getImage();
 
-        cherryImage = new ImageIcon(getClass().getResource("./cherry.png")).getImage();
+        cherryImage = new ImageIcon(getClass().getResource("/assets/cherry.png")).getImage();
 
-        pacmanUpImage = new ImageIcon(getClass().getResource("./pacmanUp.png")).getImage();
-        pacmanDownImage = new ImageIcon(getClass().getResource("./pacmanDown.png")).getImage();
-        pacmanLeftImage = new ImageIcon(getClass().getResource("./pacmanLeft.png")).getImage();
-        pacmanRightImage = new ImageIcon(getClass().getResource("./pacmanRight.png")).getImage();
+        pacmanUpImage = new ImageIcon(getClass().getResource("/assets/pacmanUp.png")).getImage();
+        pacmanDownImage = new ImageIcon(getClass().getResource("/assets/pacmanDown.png")).getImage();
+        pacmanLeftImage = new ImageIcon(getClass().getResource("/assets/pacmanLeft.png")).getImage();
+        pacmanRightImage = new ImageIcon(getClass().getResource("/assets/pacmanRight.png")).getImage();
 
         loadMap();
         for (Block ghost : ghosts) {
@@ -266,15 +267,21 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             g.drawImage(cherry.image, cherry.x, cherry.y, cherry.width, cherry.height, null);
         }
 
+        // Update the score and lives display
         g.setFont(new Font("Arial", Font.PLAIN, 18));
-        {
-            if (gameOver) {
-                g.setColor(Color.RED);
-                g.drawString("Game Over:" + String.valueOf(Score), tileSize / 2, tileSize / 2);
-            } else {
-                g.setColor(Color.WHITE);
-                g.drawString("x" + String.valueOf(lives) + "  Score: " + String.valueOf(Score), tileSize / 2,
-                        tileSize / 2);
+        if (gameOver) {
+            g.setColor(Color.WHITE);
+            g.drawString("Game Over: " + String.valueOf(Score), tileSize / 2, tileSize / 2);
+        } else {
+            g.setColor(Color.WHITE);
+
+            // Show lives, score and cherries eaten
+            String scoreText = "x" + lives + "  Score: " + Score + "  Cherries: " + cherriesEaten;
+            g.drawString(scoreText, tileSize / 2, tileSize / 2);
+
+            // Draw a small cherry icon farther away from the text
+            if (cherryImage != null) {
+                g.drawImage(cherryImage, tileSize / 2 + 230, tileSize / 2 - 15, 16, 16, null);
             }
         }
     }
@@ -340,7 +347,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         for (Block cherry : cherries) {
             if (collision(pacman, cherry)) {
                 cherryEaten = cherry;
-                Score += 100; // Cherry is worth 100 points (10x regular food)
+                Score += 100; // Cherry is worth 100 points
+                cherriesEaten++; // Increment the cherries eaten counter
             }
         }
         if (cherryEaten != null) {
