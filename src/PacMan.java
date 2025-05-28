@@ -104,6 +104,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private Image orangeGhostImage;
     private Image redGhostImage;
     private Image pinkGhostImage;
+    private Image cherryImage;
 
     private Image pacmanUpImage;
     private Image pacmanDownImage;
@@ -114,31 +115,32 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     // Ghosts: b = blue, o = orange, p = pink, r = red
     private String[] tileMap = {
             "XXXXXXXXXXXXXXXXXXX",
-            "X        X        X",
-            "X XX XXX X XXX XX X",
+            "X  C     X        X",
+            "X XX XXX X XXX XXCX",
             "X                 X",
             "X XX X XXXXX X XX X",
             "X    X       X    X",
             "XXXX XXXX XXXX XXXX",
             "OOOX X       X XOOO",
             "XXXX X XXrXX X XXXX",
-            "O       bpo       O",
+            "O C     bpo       O",
             "XXXX X XXXXX X XXXX",
             "OOOX X       X XOOO",
             "XXXX X XXXXX X XXXX",
-            "X        X        X",
+            "X       X        CX",
             "X XX XXX X XXX XX X",
             "X  X     P     X  X",
             "XX X X XXXXX X X XX",
             "X    X   X   X    X",
             "X XXXXXX X XXXXXX X",
-            "X                 X",
+            "X  C              X",
             "XXXXXXXXXXXXXXXXXXX"
     };
 
     HashSet<Block> walls;
     HashSet<Block> foods;
     HashSet<Block> ghosts;
+    HashSet<Block> cherries;
     Block pacman;
 
     Timer gameLoop;
@@ -148,22 +150,25 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     int lives = 3;
     boolean gameOver = false;
     private boolean gamePaused = false;
+    private int cherriesEaten = 0;
 
     PacMan() {
         setPreferredSize(new Dimension(boardWidth, boardHeight));
         setBackground(Color.BLACK);
 
         // Load the images
-        wallImage = new ImageIcon(getClass().getResource("/wall .png")).getImage();
-        blueGhosImage = new ImageIcon(getClass().getResource("./blueGhost.png")).getImage();
-        redGhostImage = new ImageIcon(getClass().getResource("./redGhost.png")).getImage();
-        orangeGhostImage = new ImageIcon(getClass().getResource("./orangeGhost.png")).getImage();
-        pinkGhostImage = new ImageIcon(getClass().getResource("./pinkGhost.png")).getImage();
+        wallImage = new ImageIcon(getClass().getResource("/assets/wall .png")).getImage();
+        blueGhosImage = new ImageIcon(getClass().getResource("/assets/blueGhost.png")).getImage();
+        redGhostImage = new ImageIcon(getClass().getResource("/assets/redGhost.png")).getImage();
+        orangeGhostImage = new ImageIcon(getClass().getResource("/assets/orangeGhost.png")).getImage();
+        pinkGhostImage = new ImageIcon(getClass().getResource("/assets/pinkGhost.png")).getImage();
 
-        pacmanUpImage = new ImageIcon(getClass().getResource("./pacmanUp.png")).getImage();
-        pacmanDownImage = new ImageIcon(getClass().getResource("./pacmanDown.png")).getImage();
-        pacmanLeftImage = new ImageIcon(getClass().getResource("./pacmanLeft.png")).getImage();
-        pacmanRightImage = new ImageIcon(getClass().getResource("./pacmanRight.png")).getImage();
+        cherryImage = new ImageIcon(getClass().getResource("/assets/cherry.png")).getImage();
+
+        pacmanUpImage = new ImageIcon(getClass().getResource("/assets/pacmanUp.png")).getImage();
+        pacmanDownImage = new ImageIcon(getClass().getResource("/assets/pacmanDown.png")).getImage();
+        pacmanLeftImage = new ImageIcon(getClass().getResource("/assets/pacmanLeft.png")).getImage();
+        pacmanRightImage = new ImageIcon(getClass().getResource("/assets/pacmanRight.png")).getImage();
 
         loadMap();
         for (Block ghost : ghosts) {
@@ -181,6 +186,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         walls = new HashSet<Block>();
         foods = new HashSet<Block>();
         ghosts = new HashSet<Block>();
+        cherries = new HashSet<Block>(); // Add this line
 
         for (int r = 0; r < rowCount; r++) {
             for (int c = 0; c < columnCount; c++) {
@@ -210,6 +216,9 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                 } else if (tileMapChar == ' ') {
                     Block food = new Block(null, x + 14, y + 14, 4, 4);
                     foods.add(food);
+                } else if (tileMapChar == 'C') {
+                    Block cherry = new Block(cherryImage, x, y, tileSize, tileSize);
+                    cherries.add(cherry); // Add cherries to the set
                 }
 
             }
@@ -246,7 +255,6 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
 
         for (Block ghost : ghosts) {
             g.drawImage(ghost.image, ghost.x, ghost.y, ghost.width, ghost.height, null);
-
         }
 
         for (Block food : foods) {
@@ -254,16 +262,26 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             g.fillRect(food.x, food.y, food.width, food.height);
         }
 
-        // Score
+        // Draw cherries
+        for (Block cherry : cherries) {
+            g.drawImage(cherry.image, cherry.x, cherry.y, cherry.width, cherry.height, null);
+        }
+
+        // Update the score and lives display
         g.setFont(new Font("Arial", Font.PLAIN, 18));
-        {
-            if (gameOver) {
-                g.setColor(Color.RED);
-                g.drawString("Game Over:" + String.valueOf(Score), tileSize / 2, tileSize / 2);
-            } else {
-                g.setColor(Color.WHITE);
-                g.drawString("x" + String.valueOf(lives) + "  Score: " + String.valueOf(Score), tileSize / 2,
-                        tileSize / 2);
+        if (gameOver) {
+            g.setColor(Color.WHITE);
+            g.drawString("Game Over: " + String.valueOf(Score), tileSize / 2, tileSize / 2);
+        } else {
+            g.setColor(Color.WHITE);
+
+            // Show lives, score and cherries eaten
+            String scoreText = "x" + lives + "  Score: " + Score + "  Cherries: " + cherriesEaten;
+            g.drawString(scoreText, tileSize / 2, tileSize / 2);
+
+            // Draw a small cherry icon farther away from the text
+            if (cherryImage != null) {
+                g.drawImage(cherryImage, tileSize / 2 + 230, tileSize / 2 - 15, 16, 16, null);
             }
         }
     }
@@ -324,14 +342,28 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             foods.remove(foodEaten);
         }
 
-        if (foods.isEmpty()) {
+        // Add cherry collision handling
+        Block cherryEaten = null;
+        for (Block cherry : cherries) {
+            if (collision(pacman, cherry)) {
+                cherryEaten = cherry;
+                Score += 100; // Cherry is worth 100 points
+                cherriesEaten++; // Increment the cherries eaten counter
+            }
+        }
+        if (cherryEaten != null) {
+            cherries.remove(cherryEaten);
+        }
+
+        // Update win condition to check both foods and cherries
+        if (foods.isEmpty() && cherries.isEmpty()) {
             loadMap();
             resetPositions();
         }
 
         // Handle screen wrap (tunnel effect)
-        int boardWidth = 19 * tileSize; // Based on your columnCount from App.java
-        int boardHeight = 21 * tileSize; // Based on your rowCount from App.java
+        int boardWidth = 19 * tileSize;
+        int boardHeight = 21 * tileSize;
 
         // Horizontal wrapping (left/right tunnel)
         if (pacman.x < 0) {
@@ -342,15 +374,11 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             pacman.x = 0;
         }
 
-        // Vertical wrapping (top/bottom tunnel) - optional, add if needed
         if (pacman.y < 0) {
             pacman.y = boardHeight - pacman.height;
         } else if (pacman.y >= boardHeight) {
             pacman.y = 0;
         }
-
-        // Continue with the rest of your movement and collision logic
-        // ...
     }
 
     public boolean collision(Block a, Block b) {
