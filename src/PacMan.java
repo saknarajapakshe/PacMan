@@ -1,8 +1,14 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Random;
 import javax.swing.*;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
 
 public class PacMan extends JPanel implements ActionListener, KeyListener {
     class Block {
@@ -127,17 +133,15 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             "XXXX X XXXXX X XXXX",
             "OOOX X       X XOOO",
             "XXXX X XXXXX X XXXX",
-            "X       X        CX",
+            "X        P       CX",
             "X XX XXX X XXX XX X",
-            "X  X     P     X  X",
+            "X  X           X  X",
             "XX X X XXXXX X X XX",
             "X    X   X   X    X",
             "X XXXXXX X XXXXXX X",
             "X  C              X",
             "XXXXXXXXXXXXXXXXXXX"
-    };
-
-    HashSet<Block> walls;
+    };    HashSet<Block> walls;
     HashSet<Block> foods;
     HashSet<Block> ghosts;
     HashSet<Block> cherries;
@@ -151,6 +155,13 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     boolean gameOver = false;
     private boolean gamePaused = false;
     private int cherriesEaten = 0;
+    
+    // Sound clips
+    private Clip beginningSound;
+    private Clip chompSound;
+    private Clip deathSound;
+    private Clip fruitSound;
+    private Clip intermissionSound;
 
     PacMan() {
         setPreferredSize(new Dimension(boardWidth, boardHeight));
@@ -180,6 +191,60 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         addKeyListener(this);
         setFocusable(true);
 
+        // Initialize sound clips
+        initSounds();
+        // Play the beginning sound
+        playSound(beginningSound);
+    }
+
+    // Method to initialize sound clips
+    private void initSounds() {
+        try {
+            // Load beginning sound
+            AudioInputStream beginningInputStream = AudioSystem.getAudioInputStream(
+                    getClass().getResource("/assets/SoundEffects/pacman_beginning.wav"));
+            beginningSound = AudioSystem.getClip();
+            beginningSound.open(beginningInputStream);
+            
+            // Load chomp sound
+            AudioInputStream chompInputStream = AudioSystem.getAudioInputStream(
+                    getClass().getResource("/assets/SoundEffects/pacman_chomp.wav"));
+            chompSound = AudioSystem.getClip();
+            chompSound.open(chompInputStream);
+            
+            // Load death sound
+            AudioInputStream deathInputStream = AudioSystem.getAudioInputStream(
+                    getClass().getResource("/assets/SoundEffects/pacman_death.wav"));
+            deathSound = AudioSystem.getClip();
+            deathSound.open(deathInputStream);
+            
+            // Load fruit eating sound
+            AudioInputStream fruitInputStream = AudioSystem.getAudioInputStream(
+                    getClass().getResource("/assets/SoundEffects/pacman_eatfruit.wav"));
+            fruitSound = AudioSystem.getClip();
+            fruitSound.open(fruitInputStream);
+            
+            // Load intermission sound
+            AudioInputStream intermissionInputStream = AudioSystem.getAudioInputStream(
+                    getClass().getResource("/assets/SoundEffects/pacman_intermission.wav"));
+            intermissionSound = AudioSystem.getClip();
+            intermissionSound.open(intermissionInputStream);
+            
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            System.out.println("Error loading sounds: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    // Method to play a sound
+    private void playSound(Clip clip) {
+        if (clip != null) {
+            if (clip.isRunning()) {
+                clip.stop();
+            }
+            clip.setFramePosition(0);
+            clip.start();
+        }
     }
 
     public void loadMap() {
@@ -300,12 +365,11 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                 wallCollision = true;
                 break;
             }
-        }
-
-        // for ghost collisions
+        }        // for ghost collisions
         for (Block ghost : ghosts) {
             if (collision(ghost, pacman)) {
                 lives -= 1;
+                playSound(deathSound); // Play death sound when hit by ghost
                 if (lives == 0) {
                     gameOver = true;
                     return;
@@ -328,9 +392,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                     ghost.updateDirection(newDirection);
                 }
             }
-        }
-
-        // check food collisions
+        }        // check food collisions
         Block foodEaten = null;
         for (Block food : foods) {
             if (collision(pacman, food)) {
@@ -340,6 +402,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         }
         if (foodEaten != null) {
             foods.remove(foodEaten);
+            playSound(chompSound); // Play chomp sound when eating food
         }
 
         // Add cherry collision handling
@@ -353,10 +416,10 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         }
         if (cherryEaten != null) {
             cherries.remove(cherryEaten);
-        }
-
-        // Update win condition to check both foods and cherries
+            playSound(fruitSound); // Play fruit sound when eating cherry
+        }        // Update win condition to check both foods and cherries
         if (foods.isEmpty() && cherries.isEmpty()) {
+            playSound(intermissionSound); // Play intermission sound when level is completed
             loadMap();
             resetPositions();
         }
@@ -489,9 +552,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
             pacman.requestedDirection = 'R';
         }
-    }
-
-    @Override
+    }    @Override
     public void keyReleased(KeyEvent e) {
         if (gameOver) {
             loadMap();
@@ -500,6 +561,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             Score = 0;
             gameOver = false;
             gameLoop.start();
+            playSound(beginningSound); // Play beginning sound when game restarts
         }
     }
 }
