@@ -3,6 +3,9 @@ import java.awt.event.*;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Random;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 import javax.swing.*;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -115,10 +118,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private Image pacmanUpImage;
     private Image pacmanDownImage;
     private Image pacmanLeftImage;
-    private Image pacmanRightImage;
-
-    // X = wall, O = skip, P = pac man, ' ' = food
-    // Ghosts: b = blue, o = orange, p = pink, r = red
+    private Image pacmanRightImage;    // X = wall, O = skip, P = pac man, ' ' = food
+    // Ghosts will be randomly placed in valid positions
     private String[] tileMap = {
             "XXXXXXXXXXXXXXXXXXX",
             "X  C     X        X",
@@ -128,8 +129,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             "X    X       X    X",
             "XXXX XXXX XXXX XXXX",
             "OOOX X       X XOOO",
-            "XXXX X XXrXX X XXXX",
-            "O C     bpo       O",
+            "XXXX X XX XX X XXXX",
+            "O C               O",
             "XXXX X XXXXX X XXXX",
             "OOOX X       X XOOO",
             "XXXX X XXXXX X XXXX",
@@ -141,7 +142,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             "X XXXXXX X XXXXXX X",
             "X  C              X",
             "XXXXXXXXXXXXXXXXXXX"
-    };    HashSet<Block> walls;
+    };
+    HashSet<Block> walls;
     HashSet<Block> foods;
     HashSet<Block> ghosts;
     HashSet<Block> cherries;
@@ -155,7 +157,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     boolean gameOver = false;
     private boolean gamePaused = false;
     private int cherriesEaten = 0;
-    
+
     // Sound clips
     private Clip beginningSound;
     private Clip chompSound;
@@ -205,37 +207,37 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                     getClass().getResource("/assets/SoundEffects/pacman_beginning.wav"));
             beginningSound = AudioSystem.getClip();
             beginningSound.open(beginningInputStream);
-            
+
             // Load chomp sound
             AudioInputStream chompInputStream = AudioSystem.getAudioInputStream(
                     getClass().getResource("/assets/SoundEffects/pacman_chomp.wav"));
             chompSound = AudioSystem.getClip();
             chompSound.open(chompInputStream);
-            
+
             // Load death sound
             AudioInputStream deathInputStream = AudioSystem.getAudioInputStream(
                     getClass().getResource("/assets/SoundEffects/pacman_death.wav"));
             deathSound = AudioSystem.getClip();
             deathSound.open(deathInputStream);
-            
+
             // Load fruit eating sound
             AudioInputStream fruitInputStream = AudioSystem.getAudioInputStream(
                     getClass().getResource("/assets/SoundEffects/pacman_eatfruit.wav"));
             fruitSound = AudioSystem.getClip();
             fruitSound.open(fruitInputStream);
-            
+
             // Load intermission sound
             AudioInputStream intermissionInputStream = AudioSystem.getAudioInputStream(
                     getClass().getResource("/assets/SoundEffects/pacman_intermission.wav"));
             intermissionSound = AudioSystem.getClip();
             intermissionSound.open(intermissionInputStream);
-            
+
         } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
             System.out.println("Error loading sounds: " + e.getMessage());
             e.printStackTrace();
         }
     }
-    
+
     // Method to play a sound
     private void playSound(Clip clip) {
         if (clip != null) {
@@ -245,9 +247,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             clip.setFramePosition(0);
             clip.start();
         }
-    }
-
-    public void loadMap() {
+    }    public void loadMap() {
         walls = new HashSet<Block>();
         foods = new HashSet<Block>();
         ghosts = new HashSet<Block>();
@@ -264,18 +264,6 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                 if (tileMapChar == 'X') {// Block wall
                     Block wall = new Block(wallImage, x, y, tileSize, tileSize);
                     walls.add(wall);
-                } else if (tileMapChar == 'b') {// pink ghost
-                    Block ghost = new Block(blueGhosImage, x, y, tileSize, tileSize);
-                    ghosts.add(ghost);
-                } else if (tileMapChar == 'o') {
-                    Block ghost = new Block(orangeGhostImage, x, y, tileSize, tileSize);
-                    ghosts.add(ghost);
-                } else if (tileMapChar == 'p') {
-                    Block ghost = new Block(pinkGhostImage, x, y, tileSize, tileSize);
-                    ghosts.add(ghost);
-                } else if (tileMapChar == 'r') {
-                    Block ghost = new Block(redGhostImage, x, y, tileSize, tileSize);
-                    ghosts.add(ghost);
                 } else if (tileMapChar == 'P') {
                     pacman = new Block(pacmanRightImage, x, y, tileSize, tileSize);
                 } else if (tileMapChar == ' ') {
@@ -285,10 +273,11 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                     Block cherry = new Block(cherryImage, x, y, tileSize, tileSize);
                     cherries.add(cherry); // Add cherries to the set
                 }
-
             }
-
         }
+        
+        // Place ghosts randomly in valid positions
+        placeGhostsRandomly();
     }
 
     public void paintComponent(Graphics g) {
@@ -354,18 +343,14 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     public void MovePacman() {
         // Apply velocity
         pacman.x += pacman.velocityX;
-        pacman.y += pacman.velocityY;
-
-        // Wall collision handling
-        boolean wallCollision = false;
+        pacman.y += pacman.velocityY; // Wall collision handling
         for (Block wall : walls) {
             if (collision(pacman, wall)) {
                 pacman.x -= pacman.velocityX;
                 pacman.y -= pacman.velocityY;
-                wallCollision = true;
                 break;
             }
-        }        // for ghost collisions
+        } // for ghost collisions
         for (Block ghost : ghosts) {
             if (collision(ghost, pacman)) {
                 lives -= 1;
@@ -392,7 +377,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                     ghost.updateDirection(newDirection);
                 }
             }
-        }        // check food collisions
+        } // check food collisions
         Block foodEaten = null;
         for (Block food : foods) {
             if (collision(pacman, food)) {
@@ -417,7 +402,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         if (cherryEaten != null) {
             cherries.remove(cherryEaten);
             playSound(fruitSound); // Play fruit sound when eating cherry
-        }        // Update win condition to check both foods and cherries
+        } // Update win condition to check both foods and cherries
         if (foods.isEmpty() && cherries.isEmpty()) {
             playSound(intermissionSound); // Play intermission sound when level is completed
             loadMap();
@@ -507,6 +492,42 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         }
     }
 
+    // Method to find valid spawn positions for ghosts
+    private void placeGhostsRandomly() {
+        // Clear existing ghosts
+        ghosts.clear();
+        
+        // Create a list of all valid spawn positions (empty spaces)
+        java.util.List<int[]> validPositions = new java.util.ArrayList<>();
+        
+        for (int r = 0; r < rowCount; r++) {
+            for (int c = 0; c < columnCount; c++) {
+                String row = tileMap[r];
+                char tileMapChar = row.charAt(c);
+                
+                // Valid positions are empty spaces, but not where pacman starts
+                if (tileMapChar == ' ' && !(r == 13 && c == 9)) { // Avoid pacman's starting position
+                    validPositions.add(new int[]{r, c});
+                }
+            }
+        }
+        
+        // Shuffle the list and take first 4 positions for ghosts
+        java.util.Collections.shuffle(validPositions);
+        
+        // Place 4 ghosts randomly
+        Image[] ghostImages = {blueGhosImage, orangeGhostImage, pinkGhostImage, redGhostImage};
+        
+        for (int i = 0; i < Math.min(4, validPositions.size()); i++) {
+            int[] position = validPositions.get(i);
+            int x = position[1] * tileSize;
+            int y = position[0] * tileSize;
+            
+            Block ghost = new Block(ghostImages[i], x, y, tileSize, tileSize);
+            ghosts.add(ghost);
+        }
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
         MovePacman();
@@ -552,7 +573,9 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
             pacman.requestedDirection = 'R';
         }
-    }    @Override
+    }
+
+    @Override
     public void keyReleased(KeyEvent e) {
         if (gameOver) {
             loadMap();
