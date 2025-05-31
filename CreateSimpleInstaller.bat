@@ -11,6 +11,7 @@ mkdir "PacMan-SimpleInstaller"
 echo Step 1: Copying game files...
 copy "PacMan.jar" "PacMan-SimpleInstaller\"
 copy "RunPacMan.bat" "PacMan-SimpleInstaller\"
+copy "SystemCheck.bat" "PacMan-SimpleInstaller\"
 
 echo Step 2: Creating simple installer...
 (
