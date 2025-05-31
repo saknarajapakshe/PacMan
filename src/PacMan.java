@@ -318,14 +318,33 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         // Draw cherries
         for (Block cherry : cherries) {
             g.drawImage(cherry.image, cherry.x, cherry.y, cherry.width, cherry.height, null);
-        }
-
-        // Update the score and lives display
-        g.setFont(new Font("Arial", Font.PLAIN, 18));
+        }        // Update the score and lives display
         if (gameOver) {
+            // Draw big red "Game Over" text in the center of the window
+            g.setColor(Color.RED);
+            g.setFont(new Font("Arial", Font.BOLD, 48));
+            String gameOverText = "GAME OVER";
+            
+            // Center the text
+            FontMetrics fm = g.getFontMetrics();
+            int textWidth = fm.stringWidth(gameOverText);
+            int x = (boardWidth - textWidth) / 2;
+            int y = boardHeight / 2;
+            
+            g.drawString(gameOverText, x, y);
+            
+            // Draw final score below the game over text
             g.setColor(Color.WHITE);
-            g.drawString("Game Over: " + String.valueOf(Score), tileSize / 2, tileSize / 2);
+            g.setFont(new Font("Arial", Font.PLAIN, 24));
+            String finalScore = "Final Score: " + Score;
+            FontMetrics scoreFm = g.getFontMetrics();
+            int scoreWidth = scoreFm.stringWidth(finalScore);
+            int scoreX = (boardWidth - scoreWidth) / 2;
+            int scoreY = y + 60;
+            
+            g.drawString(finalScore, scoreX, scoreY);
         } else {
+            g.setFont(new Font("Arial", Font.PLAIN, 18));
             g.setColor(Color.WHITE);
 
             // Show lives, score and cherries eaten
@@ -545,9 +564,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     public void keyPressed(KeyEvent e) {
         if (gameOver) {
             return;
-        }
-
-        // Handle pause with space bar (from previous response)
+        }        // Handle pause with space bar (from previous response)
         if (e.getKeyCode() == KeyEvent.VK_SPACE) {
             gamePaused = !gamePaused;
             if (gamePaused) {
@@ -555,6 +572,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             } else {
                 gameLoop.start();
             }
+            repaint(); // Force a repaint to show/hide the pause text immediately
             return;
         }
 
