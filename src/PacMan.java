@@ -118,7 +118,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private Image pacmanUpImage;
     private Image pacmanDownImage;
     private Image pacmanLeftImage;
-    private Image pacmanRightImage;    // X = wall, O = skip, P = pac man, ' ' = food
+    private Image pacmanRightImage; // X = wall, O = skip, P = pac man, ' ' = food
     // Ghosts will be randomly placed in valid positions
     private String[] tileMap = {
             "XXXXXXXXXXXXXXXXXXX",
@@ -247,7 +247,9 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             clip.setFramePosition(0);
             clip.start();
         }
-    }    public void loadMap() {
+    }
+
+    public void loadMap() {
         walls = new HashSet<Block>();
         foods = new HashSet<Block>();
         ghosts = new HashSet<Block>();
@@ -275,7 +277,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                 }
             }
         }
-        
+
         // Place ghosts randomly in valid positions
         placeGhostsRandomly();
     }
@@ -496,33 +498,33 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private void placeGhostsRandomly() {
         // Clear existing ghosts
         ghosts.clear();
-        
+
         // Create a list of all valid spawn positions (empty spaces)
         java.util.List<int[]> validPositions = new java.util.ArrayList<>();
-        
+
         for (int r = 0; r < rowCount; r++) {
             for (int c = 0; c < columnCount; c++) {
                 String row = tileMap[r];
                 char tileMapChar = row.charAt(c);
-                
+
                 // Valid positions are empty spaces, but not where pacman starts
                 if (tileMapChar == ' ' && !(r == 13 && c == 9)) { // Avoid pacman's starting position
-                    validPositions.add(new int[]{r, c});
+                    validPositions.add(new int[] { r, c });
                 }
             }
         }
-        
+
         // Shuffle the list and take first 4 positions for ghosts
         java.util.Collections.shuffle(validPositions);
-        
+
         // Place 4 ghosts randomly
-        Image[] ghostImages = {blueGhosImage, orangeGhostImage, pinkGhostImage, redGhostImage};
-        
+        Image[] ghostImages = { blueGhosImage, orangeGhostImage, pinkGhostImage, redGhostImage };
+
         for (int i = 0; i < Math.min(4, validPositions.size()); i++) {
             int[] position = validPositions.get(i);
             int x = position[1] * tileSize;
             int y = position[0] * tileSize;
-            
+
             Block ghost = new Block(ghostImages[i], x, y, tileSize, tileSize);
             ghosts.add(ghost);
         }
