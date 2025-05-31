@@ -564,9 +564,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     public void keyPressed(KeyEvent e) {
         if (gameOver) {
             return;
-        }
-
-        // Handle pause with space bar (from previous response)
+        }        // Handle pause with space bar (from previous response)
         if (e.getKeyCode() == KeyEvent.VK_SPACE) {
             gamePaused = !gamePaused;
             if (gamePaused) {
@@ -574,6 +572,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             } else {
                 gameLoop.start();
             }
+            repaint(); // Force a repaint to show/hide the pause text immediately
             return;
         }
 
